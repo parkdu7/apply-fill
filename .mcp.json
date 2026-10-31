@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "careerlog-fill": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["E:/code_2026/career_log/fill-mcp/dist/index.js"]
+    }
+  }
+}

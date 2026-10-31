@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.keys/
+host/dist/
+host/config.json
+host/careerlog-host.bat
+host/careerlog-host.json

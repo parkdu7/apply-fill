@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CareerLog</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header>
+      <strong>CareerLog</strong>
+      <span id="conn" class="pill">확인 중…</span>
+    </header>
+    <nav id="tabs">
+      <button data-tab="run" class="on">진행</button>
+      <button data-tab="files">파일</button>
+      <button data-tab="accounts">계정</button>
+      <button data-tab="profile">프로필</button>
+    </nav>
+
+    <main>
+      <section id="tab-run">
+        <div id="status" class="card small"></div>
+        <div class="row">
+          <button id="fill" class="primary">이 탭 채우기</button>
+          <button id="cancel" hidden>멈춤</button>
+          <select id="model" title="모델">
+            <option value="">기본 모델</option>
+            <option value="sonnet">Sonnet</option>
+            <option value="haiku">Haiku (빠름)</option>
+            <option value="opus">Opus</option>
+          </select>
+        </div>
+        <p class="hint">제출·자기소개서·동의·민감정보는 채우지 않아요. 제출은 항상 직접 하세요.</p>
+        <form id="questions" class="card" hidden></form>
+        <ol id="log"></ol>
+        <div class="row end"><button id="clear" class="link">기록 지우기</button></div>
+      </section>
+
+      <section id="tab-files" hidden>
+        <p class="hint">파일은 이 브라우저의 확장 안에만 저장돼요. Claude에게는 이름·종류·크기·발급일만 보여요.</p>
+        <form id="file-add" class="card">
+          <input type="file" id="file-input" required />
+          <div class="row">
+            <select id="file-kind">
+              <option>졸업증명서</option>
+              <option>성적증명서</option>
+              <option>자격증 사본</option>
+              <option>어학 성적표</option>
+              <option>경력증명서</option>
+              <option>포트폴리오</option>
+              <option>이력서</option>
+              <option>증명사진</option>
+              <option>기타</option>
+            </select>
+            <label class="small">발급일 <input type="date" id="file-issued" /></label>
+          </div>
+          <button class="primary">보관함에 추가</button>
+        </form>
+        <ul id="file-list" class="list"></ul>
+      </section>
+
+      <section id="tab-accounts" hidden>
+        <p class="hint">
+          비밀번호는 마스터 비밀번호로 암호화해서 이 확장 안에만 저장하고, Claude·로그·도구 결과에는 절대 보내지 않아요.
+          저장한 주소(정확히 같은 도메인)에서만 쓰고, 30분 동안 쓰지 않으면 잠겨요. CAPTCHA·2단계 인증·본인인증은 직접 하셔야 해요.
+        </p>
+        <div id="vault"></div>
+        <details class="small"><summary>로그인 기록</summary><ul id="login-log" class="list"></ul></details>
+      </section>
+
+      <section id="tab-profile" hidden>
+        <p class="hint">fill-mcp 프로필(JSON)을 직접 고칩니다. 주민번호·계좌·비밀번호는 저장되지 않아요.</p>
+        <div class="row"><button id="profile-load">불러오기</button><button id="profile-save" class="primary">저장</button><span id="profile-msg" class="small"></span></div>
+        <textarea id="profile" spellcheck="false"></textarea>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

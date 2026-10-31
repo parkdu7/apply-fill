@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>OO은행 IT직 입사지원서 (제한 테스트)</title>
+<style>
+  table { border-collapse: collapse; margin-bottom: 8px; } th, td { border: 1px solid #ccc; padding: 4px; }
+  .field { margin: 6px 0; }
+</style>
+</head>
+<body>
+<h2>입사지원서 (IT 직무)</h2>
+
+<h3>인적사항</h3>
+<table>
+  <tr><th>성명</th><td><input name="name"></td><th>한자</th><td><input name="nameHanja"></td></tr>
+  <tr>
+    <th>영문 성명</th>
+    <td colspan="3">
+      <input name="enLast" placeholder="성 (예: HONG)"> <input name="enFirst" placeholder="이름 (예: GILDONG)">
+      <span>여권과 동일하게 대문자</span>
+    </td>
+  </tr>
+  <tr>
+    <th>생년월일</th><td><input name="birth" placeholder="YYYYMMDD" maxlength="8"></td>
+    <th>휴대폰</th><td><input name="phone" placeholder="'-' 없이 숫자만" maxlength="11"></td>
+  </tr>
+</table>
+
+<h3>병역사항</h3>
+<table>
+  <tr>
+    <th>병역구분</th><td><select name="milType"><option value="">선택</option><option>군필</option><option>미필</option><option>면제</option><option>비대상</option></select></td>
+    <th>군별</th><td><select name="milBranch"><option value="">선택</option><option>육군</option><option>해군</option><option>공군</option><option>해병대</option><option>기타</option></select></td>
+  </tr>
+  <tr>
+    <th>계급</th><td><select name="milRank"><option value="">선택</option><option>이병</option><option>일병</option><option>상병</option><option>병장</option><option>하사</option><option>중사</option><option>소위</option><option>중위</option></select></td>
+    <th>병과</th><td><input name="milSpecialty"></td>
+  </tr>
+  <tr><th>복무기간</th><td colspan="3"><input name="milStart" placeholder="YYYY.MM.DD"> ~ <input name="milEnd" placeholder="YYYY.MM.DD"></td></tr>
+  <tr><th>전역사유</th><td colspan="3"><select name="milReason"><option value="">선택</option><option>만기전역</option><option>의가사전역</option><option>의병전역</option><option>기타</option></select></td></tr>
+</table>
+
+<h3>보유기술 (최대 5개)</h3>
+<table id="skills">
+  <thead><tr><th>기술명</th><th>수준</th><th>사용기간(년)</th></tr></thead>
+  <tbody>
+    <tr><td><input name="skill" maxlength="20"></td><td><select name="skillLevel"><option value="">선택</option><option>상</option><option>중</option><option>하</option></select></td><td><input name="skillYears" maxlength="2" size="3"> 년</td></tr>
+    <tr><td><input name="skill" maxlength="20"></td><td><select name="skillLevel"><option value="">선택</option><option>상</option><option>중</option><option>하</option></select></td><td><input name="skillYears" maxlength="2" size="3"> 년</td></tr>
+    <tr><td><input name="skill" maxlength="20"></td><td><select name="skillLevel"><option value="">선택</option><option>상</option><option>중</option><option>하</option></select></td><td><input name="skillYears" maxlength="2" size="3"> 년</td></tr>
+    <tr><td><input name="skill" maxlength="20"></td><td><select name="skillLevel"><option value="">선택</option><option>상</option><option>중</option><option>하</option></select></td><td><input name="skillYears" maxlength="2" size="3"> 년</td></tr>
+    <tr><td><input name="skill" maxlength="20"></td><td><select name="skillLevel"><option value="">선택</option><option>상</option><option>중</option><option>하</option></select></td><td><input name="skillYears" maxlength="2" size="3"> 년</td></tr>
+  </tbody>
+</table>
+
+<h3>수상경력 (최대 3개)</h3>
+<table id="awards">
+  <thead><tr><th>수상명</th><th>수여기관</th><th>수상일</th><th>내용 (100자 이내)</th></tr></thead>
+  <tbody>
+    <tr class="award-row">
+      <td><input name="awardName" maxlength="50" size="30"></td>
+      <td><input name="awardOrg" maxlength="30"></td>
+      <td><input name="awardDate" placeholder="YYYY.MM.DD" size="10"></td>
+      <td><input name="awardDesc" maxlength="100" size="60"></td>
+    </tr>
+  </tbody>
+</table>
+<button type="button" id="addAward">+ 수상 추가</button>
+
+<h3>교육·대외활동</h3>
+<div class="act">
+  <div class="field"><label>기관명 <input name="actOrg"></label> <label>활동명 <input name="actName"></label></div>
+  <div class="field"><label>시작 <input type="month" name="actStart"></label> <label>종료 <input type="month" name="actEnd"></label></div>
+  <div class="field">
+    <label for="actDesc">활동내용</label>
+    <textarea id="actDesc" name="actDesc" maxlength="300" rows="3" cols="60"></textarea>
+    <span class="count"><b id="actCount">0</b> / 300자</span>
+  </div>
+</div>
+
+<h3>자격증</h3>
+<table id="certs">
+  <thead><tr><th>자격증명</th><th>발행기관</th><th>취득일</th><th>자격번호</th></tr></thead>
+  <tbody>
+    <tr><td><input name="certName"></td><td><input name="certOrg"></td><td><input name="certDate" placeholder="YYYY.MM.DD"></td><td><input name="certNo"></td></tr>
+    <tr><td><input name="certName"></td><td><input name="certOrg"></td><td><input name="certDate" placeholder="YYYY.MM.DD"></td><td><input name="certNo"></td></tr>
+  </tbody>
+</table>
+
+<h3>어학</h3>
+<table id="lang">
+  <thead><tr><th>시험명</th><th>점수/등급</th><th>응시일</th><th>수험번호</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><select name="langTest"><option value="">선택</option><option>TOEIC</option><option>TOEIC Speaking</option><option>OPIc</option><option>TEPS</option><option>TOEFL</option></select></td>
+      <td><input name="langScore" size="6"></td>
+      <td><input name="langDate" placeholder="YYYY.MM.DD" size="10"></td>
+      <td><input name="langNo" placeholder="'-' 없이 숫자만" size="20"></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>대표 프로젝트</h3>
+<div class="field">
+  <label for="projSummary">한 줄 요약</label>
+  <input id="projSummary" name="projSummary" size="80">
+  <span class="byte">(<b id="projBytes">0</b>/100 byte)</span>
+</div>
+
+<h3>자기소개서</h3>
+<div class="field">
+  <p>1. 당행에 지원한 동기와 입사 후 포부를 작성해 주세요. (500자 이내)</p>
+  <textarea name="essay" maxlength="500" rows="5" cols="60"></textarea>
+  <span class="count">0 / 500자</span>
+</div>
+
+<div class="btns">
+  <button type="button" id="save">임시저장</button>
+  <button type="button" id="submit">제출하기</button>
+</div>
+
+<script>
+  window.state = {};
+  window.saved = 0;
+  // 한글 2byte, 영문·숫자 1byte (EUC-KR 방식)
+  const bytes = (s) => [...s].reduce((n, c) => n + (c.charCodeAt(0) > 127 ? 2 : 1), 0);
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.name) state[t.name] = t.value;
+    if (t.id === 'actDesc') document.getElementById('actCount').textContent = t.value.length;
+    if (t.id === 'projSummary') document.getElementById('projBytes').textContent = bytes(t.value);
+  });
+  document.addEventListener('change', (e) => { if (e.target.name) state[e.target.name] = e.target.value; });
+  document.getElementById('addAward').onclick = () => {
+    const tb = document.querySelector('#awards tbody');
+    if (tb.rows.length >= 3) { alert('수상경력은 최대 3개까지 입력할 수 있습니다.'); return; }
+    const row = tb.rows[0].cloneNode(true);
+    row.querySelectorAll('input').forEach((i) => (i.value = ''));
+    tb.appendChild(row);
+  };
+  document.getElementById('save').onclick = () => { window.saved++; };
+  document.getElementById('submit').onclick = () => { window.submitted = true; };
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>첨부 서류</title>
+    <style>
+      .hide { display: none; }
+      .modal { position: fixed; inset: 10% 20%; background: #fff; border: 1px solid #888; padding: 16px; }
+      .zone { border: 2px dashed #888; padding: 20px; }
+      .row { margin: 8px 0; }
+    </style>
+  </head>
+  <body>
+    <!--
+      P3 파일 첨부 fixture
+      - 졸업증명서: 보이는 input, accept=.pdf, 안내문 "최대 1MB, 3개월 이내 발급"
+      - 포트폴리오: input을 숨기고 라벨 버튼으로 고르는 칸 (change에서 파일 이름을 그린다)
+      - 성적증명서: 이미 파일이 들어 있는 칸 (덮어쓰면 안 된다)
+      - 증명사진: input은 숨김이고 change를 안 듣는다. 드롭 영역만 파일을 받는다
+      - 자격사항: [추가] → 팝업(자격증명 + 필수 첨부 "자격증 사본") → [저장] (파일이 없으면 저장 안 됨)
+    -->
+    <h2>첨부 서류</h2>
+    <div class="row" id="grad">
+      <label for="f-grad">졸업증명서 *</label>
+      <input type="file" id="f-grad" accept=".pdf" required />
+      <p class="notice">PDF 파일, 최대 1MB, 3개월 이내 발급분만 인정</p>
+      <span class="name"></span>
+    </div>
+    <div class="row" id="port">
+      <span>포트폴리오</span>
+      <label for="f-port" class="btn">파일 선택</label>
+      <input type="file" id="f-port" class="hide" />
+      <span class="name">선택된 파일 없음</span>
+    </div>
+    <div class="row" id="trans">
+      <label for="f-trans">성적증명서</label>
+      <input type="file" id="f-trans" />
+      <span class="name"></span>
+    </div>
+    <div class="row" id="photo">
+      <span>증명사진</span>
+      <div class="zone">
+        <input type="file" id="f-photo" class="hide" accept="image/*" />
+        <span class="name">여기로 끌어다 놓으세요</span>
+      </div>
+    </div>
+
+    <h2>자격사항</h2>
+    <ul id="lcns"></ul>
+    <button type="button" id="add">추가하기</button>
+
+    <div class="modal hide" id="modal" role="dialog" aria-modal="true">
+      <h3>자격증 추가</h3>
+      <div class="row"><label for="m-name">자격증명</label><input id="m-name" /></div>
+      <div class="row"><label for="m-copy">자격증 사본 *</label><input type="file" id="m-copy" required /><span class="name"></span></div>
+      <button type="button" id="m-save">저장</button>
+      <button type="button" id="m-close">닫기</button>
+    </div>
+
+    <script>
+      window.__fixtureState = { saved: [], alerts: [], photo: null };
+      const showName = (input) => {
+        input.addEventListener('change', () => {
+          const n = input.parentElement.querySelector('.name');
+          if (n) n.textContent = input.files[0] ? input.files[0].name : '';
+        });
+      };
+      for (const id of ['f-grad', 'f-port', 'f-trans', 'm-copy']) showName(document.getElementById(id));
+
+      // 성적증명서에는 이미 파일이 있다
+      const dt = new DataTransfer();
+      dt.items.add(new File(['old'], '기존_성적증명서.pdf', { type: 'application/pdf' }));
+      document.getElementById('f-trans').files = dt.files;
+      document.querySelector('#trans .name').textContent = '기존_성적증명서.pdf';
+
+      // 증명사진: 드롭만 받는다
+      const zone = document.querySelector('.zone');
+      zone.addEventListener('dragover', (e) => e.preventDefault());
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const f = e.dataTransfer.files[0];
+        if (!f) return;
+        window.__fixtureState.photo = f.name;
+        zone.querySelector('.name').textContent = f.name;
+      });
+
+      const modal = document.getElementById('modal');
+      document.getElementById('add').addEventListener('click', () => {
+        document.getElementById('m-name').value = '';
+        document.getElementById('m-copy').value = '';
+        modal.querySelector('.name').textContent = '';
+        modal.classList.remove('hide');
+      });
+      document.getElementById('m-close').addEventListener('click', () => modal.classList.add('hide'));
+      document.getElementById('m-save').addEventListener('click', () => {
+        const name = document.getElementById('m-name').value.trim();
+        const copy = document.getElementById('m-copy').files[0];
+        if (!name || !copy) {
+          window.__fixtureState.alerts.push('필수 항목을 입력해 주세요');
+          return;
+        }
+        window.__fixtureState.saved.push({ name, copy: copy.name });
+        const li = document.createElement('li');
+        li.textContent = `${name} (${copy.name})`;
+        document.getElementById('lcns').append(li);
+        modal.classList.add('hide');
+      });
+    </script>
+  </body>
+</html>

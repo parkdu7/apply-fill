@@ -1,0 +1,18 @@
+node_modules/
+dist/
+
+# 문서: 기획서·문제정리 노트는 커밋하지 않는다 (README.md는 커밋)
+docs/
+/*.md
+!README.md
+
+# 개인정보: 프로필과 페이지 스냅샷 (fill-mcp/.gitignore에도 있음)
+fill-mcp/data/
+
+# 로컬 설정·도구
+.claude/
+.env*
+*.log
+
+# 채우기 측정 기록 (로컬 전용)
+.metrics/

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ninehire 학력 입력 (fixture)</title>
+<!-- 2026-10-27 AK아이에스(akis.ninehire.site) 스냅샷 구조를 줄여 옮김:
+     학교 검색 = ul[role=menu] 안 div 줄(cursor:pointer, li·role 없음) + "'X'(으)로 직접 입력하기",
+     날짜 = antd DatePicker(readonly일 때도 아닐 때도 있음, 달력 칸을 눌러야 상태에 들어감), 줄 확정 = "입력사항 저장" -->
+<style>
+  body { font: 14px sans-serif; padding: 24px; }
+  .row { margin: 12px 0; position: relative; width: 480px; }
+  .menu-wrap { position: absolute; z-index: 10; top: 52px; left: 0; width: 100%; background: #fff; border: 1px solid #ccc; }
+  .item, .direct { cursor: pointer; padding: 8px; }
+  .scroll-thumb { cursor: pointer; height: 0; }
+  .ant-picker-dropdown { position: absolute; z-index: 10; background: #fff; border: 1px solid #ccc; padding: 4px; }
+  .ant-picker-dropdown-hidden { display: none; }
+  .ant-picker-cell { cursor: pointer; padding: 2px 4px; }
+</style>
+</head>
+<body>
+<div class="row"><label for="birth">생년월일</label>
+  <div class="ant-picker"><div class="ant-picker-input"><input id="birth" readonly placeholder="날짜 선택" data-name="birth" data-mode="date"></div></div></div>
+<div class="row"><label for="school">고등학교</label>
+  <div class="ant-dropdown-trigger"><input id="school" type="text" placeholder="학교 검색"></div>
+  <div id="menu-host"></div></div>
+<div class="row"><label for="start">입학년월</label>
+  <div class="ant-picker"><div class="ant-picker-input"><input id="start" readonly placeholder="입학년월" data-name="start" data-mode="month"></div></div></div>
+<div class="row"><label for="end">졸업년월</label>
+  <div class="ant-picker"><div class="ant-picker-input"><input id="end" placeholder="졸업년월" data-name="end" data-mode="month"></div></div></div>
+<div class="row"><button id="rowsave" disabled>입력사항 저장</button> <button id="tmp">임시 저장</button> <button id="submit">제출하기</button></div>
+<script>
+const state = { f: {}, rows: 0, saved: 0, submitted: false };
+window.__fixtureState = state;
+const SCHOOLS = ['한빛고등학교', '한별고등학교', '수원고등학교'];
+const $ = (id) => document.getElementById(id);
+const refresh = () => ($('rowsave').disabled = !(state.f.school && state.f.start && state.f.end));
+
+// 학교 검색: 실제 키 입력에만 검색한다
+const school = $('school');
+function closeMenu() { $('menu-host').innerHTML = ''; }
+school.addEventListener('input', () => {
+  delete state.f.school;
+  refresh();
+  const q = school.value.trim();
+  closeMenu();
+  if (!q) return;
+  const hits = SCHOOLS.filter((s) => s.includes(q));
+  const items = hits.map((s) => `<div class="item" data-school="${s}"><div class="icon"></div><div class="wrap"><span>${s.replace(q, `<span style="color:#664FFF">${q}</span>`)}</span></div></div>`).join('');
+  $('menu-host').innerHTML = `<div class="menu-wrap"><ul role="menu" class="ant-dropdown-menu" style="list-style:none;margin:0;padding:0">
+    <div class="content"><div class="dropdown-menu">${items}</div><div class="scroll-thumb"></div></div>
+    <div class="direct" data-school="${q}"><span>'${q}'</span><span>(으)로 직접 입력하기</span></div></ul></div>`;
+});
+$('menu-host').addEventListener('click', (e) => {
+  const row = e.target.closest('[data-school]');
+  if (!row) return;
+  state.f.school = row.dataset.school;
+  school.value = row.dataset.school;
+  closeMenu();
+  refresh();
+});
+
+// antd DatePicker 흉내: readonly input, body에 붙는 달력, 칸을 눌러야 값이 정해진다
+function picker(input) {
+  const mode = input.dataset.mode;
+  const drop = document.createElement('div');
+  drop.className = 'ant-picker-dropdown ant-picker-dropdown-hidden';
+  document.body.append(drop);
+  let view;
+  const pad = (n) => String(n).padStart(2, '0');
+  const cells = (titles, text) => `<table><tbody><tr>${titles.map((t) => `<td class="ant-picker-cell" title="${t}"><div class="ant-picker-cell-inner">${text(t)}</div></td>`).join('')}</tr></tbody></table>`;
+  function render() {
+    let head = `<button class="ant-picker-header-super-prev-btn">«</button>`;
+    let body;
+    if (view.panel === 'year') {
+      body = `<div class="ant-picker-year-panel">${cells(Array.from({ length: 10 }, (_, i) => String(view.decade + i)), (t) => t)}</div>`;
+      head += `<button class="ant-picker-decade-btn">${view.decade}-${view.decade + 9}</button>`;
+    } else if (view.panel === 'month') {
+      body = `<div class="ant-picker-month-panel">${cells(Array.from({ length: 12 }, (_, i) => `${view.y}-${pad(i + 1)}`), (t) => t.slice(5) + '월')}</div>`;
+      head += `<button class="ant-picker-year-btn">${view.y}</button>`;
+    } else {
+      body = `<div class="ant-picker-date-panel">${cells(Array.from({ length: 28 }, (_, i) => `${view.y}-${view.m}-${pad(i + 1)}`), (t) => String(Number(t.slice(8))))}</div>`;
+      head += `<button class="ant-picker-year-btn">${view.y}</button>`;
+    }
+    drop.innerHTML = `<div class="ant-picker-header">${head}<button class="ant-picker-header-super-next-btn">»</button></div>${body}`;
+  }
+  input.addEventListener('mousedown', () => {
+    view = { panel: mode, y: 2026, m: '10', decade: 2020 };
+    render();
+    const r = input.getBoundingClientRect();
+    drop.style.left = r.left + 'px';
+    drop.style.top = r.bottom + window.scrollY + 4 + 'px';
+    drop.classList.remove('ant-picker-dropdown-hidden');
+  });
+  drop.addEventListener('click', (e) => {
+    const t = e.target;
+    const step = view.panel === 'year' ? 10 : 1;
+    if (t.closest('.ant-picker-year-btn')) view.panel = 'year';
+    else if (t.closest('.ant-picker-header-super-prev-btn')) { view.decade -= 10; view.y -= step; }
+    else if (t.closest('.ant-picker-header-super-next-btn')) { view.decade += 10; view.y += step; }
+    else {
+      const td = t.closest('td[title]');
+      if (!td) return;
+      const title = td.getAttribute('title');
+      if (view.panel === 'year') { view.y = Number(title); view.panel = 'month'; }
+      else if (view.panel === 'month' && mode === 'date') { view.m = title.slice(5); view.panel = 'date'; }
+      else {
+        state.f[input.dataset.name] = title;
+        input.value = title;
+        drop.classList.add('ant-picker-dropdown-hidden');
+        refresh();
+        return;
+      }
+    }
+    render();
+  });
+}
+document.querySelectorAll('.ant-picker input').forEach(picker);
+
+$('rowsave').addEventListener('click', () => state.rows++);
+$('tmp').addEventListener('click', () => state.saved++);
+$('submit').addEventListener('click', () => (state.submitted = true));
+</script>
+</body>
+</html>

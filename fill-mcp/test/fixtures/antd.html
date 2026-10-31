@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>테스트 antd 지원서 (ninehire 구조)</title>
+<!--
+  ninehire 계열(antd + 폼 빌더) 지원서의 구조만 흉내 낸 페이지. 실제 개인정보는 없다.
+  - 드롭다운: <div class="ant-dropdown-trigger"><span>선택해주세요.</span></div>. button/select/role/aria-* 없음.
+    누르면 body 끝에 portal로 .ant-dropdown > ul.ant-dropdown-menu > li.ant-dropdown-menu-item 이 붙는다 (닫으면 ant-dropdown-hidden)
+  - antd Select: .ant-select-selector 를 mousedown하면 portal .ant-select-dropdown 이 열린다.
+    안에는 접근성용 0px role=listbox(진짜 목록 아님)와 .ant-select-item-option 목록이 따로 있다
+  - 라벨: <label>이 아니라 contenteditable div(EditableLabel). 칸 위쪽 형제 div.label 안에 있다. 설명 칸도 빈 contenteditable
+  - 활용능력: 라벨 줄(div.label 셋)과 칸 줄이 따로 있는 표 모양 (라벨이 하나로 합쳐지기 쉬움)
+  - 주소: input이 아니라 div(DivLikeInput). 누르면 주소 검색 팝업을 띄우는 것으로만 값을 넣을 수 있다
+  - 학력·어학·자격증·활용능력 "구분"을 고르면 상세 칸이 새로 나타난다. 자격증은 같은 라벨의 줄이 두 개
+-->
+<style>
+  body { font-family: sans-serif; margin: 0; background: #fff; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  .question { margin: 14px 0; }
+  .label { display: flex; gap: 2px; margin-bottom: 4px; font-weight: 600; }
+  .label .required { color: #e33; }
+  .EditableLabel { outline: none; }
+  .description .EditableLabel { font-size: 12px; color: #888; min-height: 2px; }
+  .description .EditableLabel:empty::before { content: attr(data-placeholder); color: #bbb; }
+  .ant-input { box-sizing: border-box; width: 100%; height: 32px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 4px 11px; }
+  .ant-dropdown-trigger { display: flex; justify-content: space-between; align-items: center; height: 32px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 0 11px; cursor: pointer; }
+  .ant-dropdown-trigger .ph { color: #bbb; }
+  .ant-dropdown { position: absolute; z-index: 1050; background: #fff; box-shadow: 0 6px 16px rgba(0, 0, 0, .08); border-radius: 8px; }
+  .ant-dropdown-hidden, .ant-select-dropdown-hidden { display: none; }
+  .ant-dropdown-menu { list-style: none; margin: 0; padding: 4px; }
+  .ant-dropdown-menu-item { padding: 5px 12px; cursor: pointer; }
+  .ant-dropdown-menu-item:hover { background: #f5f5f5; }
+  .ant-select { position: relative; display: block; }
+  .ant-select-selector { display: flex; align-items: center; height: 32px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 0 11px; cursor: pointer; }
+  .ant-select-selection-search { position: absolute; inset: 0 11px; }
+  .ant-select-selection-search-input { width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+  .ant-select-selection-placeholder { color: #bbb; }
+  .ant-select-dropdown { position: absolute; z-index: 1050; background: #fff; box-shadow: 0 6px 16px rgba(0, 0, 0, .08); border-radius: 8px; padding: 4px; }
+  .ant-select-item-option { padding: 5px 12px; cursor: pointer; }
+  .a11y-list { height: 0; width: 0; overflow: hidden; }
+  .DivLikeInput, .addr-box { box-sizing: border-box; height: 32px; border: 1px solid #d9d9d9; border-radius: 6px; padding: 6px 11px; color: #bbb; cursor: pointer; margin-bottom: 6px; }
+  .cols { display: flex; gap: 8px; }
+  .cols > div { flex: 1; }
+  .hide { display: none !important; }
+  footer { display: flex; gap: 8px; padding: 16px; border-top: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<footer>
+  <button type="button" class="ant-btn" id="save">임시저장</button>
+  <button type="button" class="ant-btn ant-btn-primary" id="submit">제출하기</button>
+</footer>
+<script>
+const state = { f: {}, submitted: false, saved: 0, postcodeOpened: 0 };
+window.__fixtureState = state;
+const app = document.getElementById('app');
+
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k);
+  return e;
+}
+
+// 폼 빌더 라벨: contenteditable div. 필수면 * 를 옆에 붙인다
+function label(text, required) {
+  return h('div', { class: 'label' }, h('div', { class: 'EditableLabel', contenteditable: 'true' }, text), required ? h('span', { class: 'required' }, '*') : null);
+}
+const description = () => h('div', { class: 'description' }, h('div', { class: 'EditableLabel', contenteditable: 'true', 'data-placeholder': '내용' }));
+const question = (text, required, control, opts = {}) =>
+  h('div', { class: 'question', id: opts.id }, label(text, required), opts.desc ? description() : null, h('div', { class: 'field' }, control));
+const input = (name, placeholder) =>
+  h('input', { class: 'ant-input', type: 'text', placeholder, oninput: (e) => (state.f[name] = e.target.value) });
+
+// ---------- antd 드롭다운 (portal) ----------
+const popups = [];
+function placeBelow(popup, trigger) {
+  const r = trigger.getBoundingClientRect();
+  popup.style.left = `${r.left + window.scrollX}px`;
+  popup.style.top = `${r.bottom + window.scrollY + 4}px`;
+  popup.style.minWidth = `${r.width}px`;
+}
+function closeAll(except) {
+  for (const p of popups) if (p.el !== except) p.close();
+}
+document.addEventListener('mousedown', (e) => {
+  for (const p of popups) if (!p.el.contains(e.target) && !p.trigger.contains(e.target)) p.close();
+});
+
+function dropdown(name, options, onChange) {
+  const text = h('span', { class: 'ph' }, '선택해주세요.');
+  const trigger = h('div', { class: 'ant-dropdown-trigger css-1x2y3z' }, text);
+  let menu = null;
+  const p = {
+    trigger,
+    el: null,
+    close() {
+      if (menu) menu.classList.add('ant-dropdown-hidden');
+    },
+  };
+  popups.push(p);
+  trigger.addEventListener('click', () => {
+    if (menu && !menu.classList.contains('ant-dropdown-hidden')) return p.close();
+    if (!menu) {
+      menu = h(
+        'div',
+        { class: 'ant-dropdown css-1x2y3z ant-dropdown-placement-bottomLeft' },
+        h('ul', { class: 'ant-dropdown-menu ant-dropdown-menu-root ant-dropdown-menu-vertical', role: 'menu' },
+          options.map((o) =>
+            h('li', {
+              class: 'ant-dropdown-menu-item',
+              role: 'menuitem',
+              onclick: () => {
+                state.f[name] = o;
+                text.textContent = o;
+                text.className = 'val';
+                p.close();
+                onChange?.(o);
+              },
+            }, h('span', { class: 'ant-dropdown-menu-title-content' }, o)),
+          ),
+        ),
+      );
+      p.el = menu;
+      document.body.append(menu);
+    }
+    closeAll(menu);
+    menu.classList.remove('ant-dropdown-hidden');
+    placeBelow(menu, trigger);
+  });
+  return trigger;
+}
+
+let selectSeq = 0;
+function antSelect(name, options) {
+  const id = `rc_select_${selectSeq++}`;
+  const shown = h('span', { class: 'ant-select-selection-placeholder' }, '선택');
+  const search = h('input', {
+    type: 'search', readonly: true, autocomplete: 'off', class: 'ant-select-selection-search-input',
+    role: 'combobox', 'aria-expanded': 'false', 'aria-haspopup': 'listbox', 'aria-owns': `${id}_list`, 'aria-controls': `${id}_list`, 'aria-autocomplete': 'list',
+  });
+  const selector = h('div', { class: 'ant-select-selector' }, h('span', { class: 'ant-select-selection-search' }, search), shown);
+  const root = h('div', { class: 'ant-select ant-select-single ant-select-show-arrow' }, selector);
+  let dd = null;
+  const p = {
+    trigger: root,
+    el: null,
+    close() {
+      if (dd) dd.classList.add('ant-select-dropdown-hidden');
+      search.setAttribute('aria-expanded', 'false');
+    },
+  };
+  popups.push(p);
+  selector.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    if (dd && !dd.classList.contains('ant-select-dropdown-hidden')) return p.close();
+    if (!dd) {
+      const pick = (o) => {
+        state.f[name] = o;
+        shown.textContent = o;
+        shown.className = 'ant-select-selection-item';
+        p.close();
+      };
+      dd = h('div', { class: 'ant-select-dropdown css-1x2y3z ant-select-dropdown-placement-bottomLeft' },
+        h('div', {},
+          // 접근성용 목록: 크기 0, 보이지 않는다
+          h('div', { role: 'listbox', id: `${id}_list`, class: 'a11y-list' }, h('div', { role: 'option', 'aria-selected': 'false' }, options[0])),
+          h('div', { class: 'rc-virtual-list' }, h('div', { class: 'rc-virtual-list-holder' }, h('div', { class: 'rc-virtual-list-holder-inner' },
+            options.map((o) => h('div', { class: 'ant-select-item ant-select-item-option', title: o, onclick: () => pick(o) }, h('div', { class: 'ant-select-item-option-content' }, o))),
+          ))),
+        ),
+      );
+      p.el = dd;
+      document.body.append(dd);
+    }
+    closeAll(dd);
+    dd.classList.remove('ant-select-dropdown-hidden');
+    search.setAttribute('aria-expanded', 'true');
+    placeBelow(dd, selector);
+  });
+  return root;
+}
+
+// 주소: div라서 값을 넣을 수 없다. 누르면 우편번호 검색 팝업(여기서는 횟수만 센다)
+const openPostcode = () => state.postcodeOpened++;
+
+const show = (id, on) => document.getElementById(id).classList.toggle('hide', !on);
+
+app.append(
+  h('h2', {}, '나인테크 2026 하반기 신입 공채'),
+
+  h('h3', {}, '지원 정보'),
+  question('지원분야', true, dropdown('field', ['백엔드 개발', '프론트엔드 개발', '데이터 엔지니어'])),
+  question('지원경로', true, dropdown('route', ['채용 사이트', '지인 추천', '학교 공고', '기타'])),
+
+  h('h3', {}, '기본 정보'),
+  question('이름', true, input('name', '이름을 입력해주세요.')),
+  question('영문이름', true, input('nameEn', '예) HONG GILDONG'), { desc: true }),
+  question('성별', true, dropdown('gender', ['남', '여'])),
+  question('휴대폰 번호', true, input('phone', '010-0000-0000'), { desc: true }),
+  question('이메일', true, input('email', 'example@email.com'), { desc: true }),
+  h('div', { class: 'question' },
+    label('주소', true),
+    h('div', { class: 'address' },
+      h('div', { class: 'DivLikeInput', tabindex: '0', onclick: openPostcode }, '우편번호'),
+      h('div', { class: 'sc-gKclnd hTyLwM addr-box', tabindex: '0', onclick: openPostcode }, '도로명주소'),
+      input('addr2', '상세주소'),
+    ),
+  ),
+
+  h('h3', {}, '병역 · 보훈 · 장애'),
+  question('보훈 대상 여부', true, dropdown('veteran', ['대상', '비대상'])),
+  question('병역 사항', true, dropdown('military', ['군필', '미필', '면제', '해당없음'])),
+  question('장애 여부', true, dropdown('disability', ['대상', '비대상'])),
+
+  h('h3', {}, '학력'),
+  question('학력 구분', true, dropdown('eduLevel', ['고등학교 졸업', '대학교(2,3년)', '대학교(4년)', '대학원(석사)'], (v) => show('edu-detail', v !== '고등학교 졸업'))),
+  h('div', { id: 'edu-detail', class: 'hide' },
+    question('학교명', true, input('school', '학교명을 입력해주세요.')),
+    question('전공', true, input('major', '전공을 입력해주세요.')),
+    question('학위', true, antSelect('degree', ['학사', '석사', '박사'])),
+    h('div', { class: 'cols' },
+      question('입학년월', true, input('eduStart', 'YYYY.MM')),
+      question('졸업년월', true, input('eduEnd', 'YYYY.MM')),
+    ),
+  ),
+
+  h('h3', {}, '어학'),
+  question('어학 구분', false, dropdown('langHas', ['없음', '있음'], (v) => show('lang-detail', v === '있음'))),
+  h('div', { id: 'lang-detail', class: 'hide' },
+    question('시험명', true, dropdown('langTest', ['TOEIC', 'TOEFL', 'OPIc', 'TEPS'])),
+    h('div', { class: 'cols' },
+      question('점수', true, input('langScore', '점수')),
+      question('취득일', true, input('langDate', 'YYYY.MM.DD')),
+    ),
+  ),
+
+  h('h3', {}, '자격증'),
+  question('자격증 구분', false, dropdown('certHas', ['없음', '있음'], (v) => show('cert-detail', v === '있음'))),
+  h('div', { id: 'cert-detail', class: 'hide' },
+    [1, 2].map((i) =>
+      h('div', { class: 'cols cert-row' },
+        question('자격증명', false, input(`cert${i}`, '자격증명')),
+        question('취득일', false, input(`certDate${i}`, 'YYYY.MM.DD')),
+      ),
+    ),
+  ),
+
+  h('h3', {}, '활용능력'),
+  question('활용능력 구분', false, dropdown('skillHas', ['없음', '있음'], (v) => show('skill-detail', v === '있음'))),
+  h('div', { id: 'skill-detail', class: 'hide' },
+    h('div', { class: 'cols label-row' },
+      h('div', { class: 'label' }, '프로그램'),
+      h('div', { class: 'label' }, '활용 수준'),
+      h('div', { class: 'label' }, '사용 기간'),
+    ),
+    h('div', { class: 'cols input-row' },
+      h('div', {}, input('skillName', '예) Excel')),
+      h('div', {}, dropdown('skillLevel', ['상', '중', '하'])),
+      h('div', {}, input('skillPeriod', '예) 2년')),
+    ),
+  ),
+
+  h('h3', {}, '자기소개'),
+  question('지원 동기', true, h('textarea', { class: 'ant-input', rows: '5', oninput: (e) => (state.f.motive = e.target.value) })),
+  h('label', { class: 'ant-checkbox-wrapper' },
+    h('span', { class: 'ant-checkbox' }, h('input', { type: 'checkbox', class: 'ant-checkbox-input', onchange: (e) => (state.f.agree = e.target.checked) })),
+    h('span', {}, '개인정보 수집 및 이용에 동의합니다'),
+  ),
+);
+
+document.getElementById('save').addEventListener('click', () => state.saved++);
+document.getElementById('submit').addEventListener('click', () => (state.submitted = true));
+</script>
+</body>
+</html>

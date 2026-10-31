@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>테스트 ATS 지원서 (kt.recruiter.co.kr 구조)</title>
+<!--
+  kt.recruiter.co.kr(ats- 디자인 시스템) 지원서의 구조만 흉내 낸 페이지. 실제 개인정보는 없다.
+  - aria 표시가 없는 드롭다운: <button><p>글자</p><svg/></button>, 누르면 옆에 #dropdown-body > ul > li > button 목록이 생긴다
+  - 검색형 칸: role=combobox 없음. 실제 키 입력(isTrusted)에만 검색하고, DOM으로 바꾼 값은 무시한다
+  - 후보 목록 끝에 "'검색어' 등록하기"(새 항목 등록)가 붙는다
+  - 라디오처럼 쓰는 버튼 묶음: li > button, 고른 것은 클래스·색으로만 표시 (aria 없음). 성별 라디오는 선택지마다 name이 다르다
+  - 앞 칸을 골라야 풀리는 칸(학교 → 소재지·본교/분교, 전공 → 평점, 장애 "대상" → 등록번호)
+  - "18 개월" 같은 버튼이 다른 칸(제대일)을 다시 계산한다
+  - "추가하기"는 팝업 없이 페이지 안에 줄을 펼친다 (전공), 같은 섹션에 추가하기가 여러 개 (경력기술서/포트폴리오)
+-->
+<style>
+  body { font-family: sans-serif; margin: 0; background: #fff; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  .e1gln9b0 { display: flex; gap: 12px; margin: 10px 0; align-items: flex-start; }
+  .e1gln9b1 { width: 120px; display: flex; gap: 2px; }
+  .e1gln9b1 p { margin: 0; }
+  .e1gln9b4 { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .hidden-copy { position: absolute; left: -9999px; top: -9999px; visibility: hidden; pointer-events: none; }
+  .dd-wrap { position: relative; display: inline-block; }
+  .ats-dd { display: inline-flex; align-items: center; gap: 4px; min-width: 140px; justify-content: space-between; background: #fff; border: 1px solid #ccc; padding: 4px 8px; }
+  .ats-dd p { margin: 0; }
+  .dd-ph { color: #999; }
+  .dd-val { color: #222; }
+  #dropdown-body, .dropdown-body { position: absolute; top: 100%; left: 0; z-index: 10; background: #fff; border: 1px solid #aaa; min-width: 160px; }
+  .dropdown-body ul { list-style: none; margin: 0; padding: 4px; display: flex; flex-direction: column; }
+  .dropdown-body li button { width: 100%; text-align: left; background: #fff; border: 0; padding: 4px; }
+  .tg { display: flex; gap: 4px; }
+  .ats-list-none { list-style: none; }
+  .tg-btn { border: 0; padding: 4px 12px; border-radius: 6px; }
+  .tg-btn p { margin: 0; }
+  .ats-bg-gray-80 { background: #eef0f2; color: #555; }
+  .ats-bg-white { background: #fff; color: #222; }
+  .ats-shadow-1 { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+  .ats-b1-bold { font-weight: 700; }
+  .ats-b1 { font-weight: 400; }
+  .search-wrap { position: relative; display: inline-block; }
+  .hide { display: none !important; }
+  footer { display: flex; gap: 8px; padding: 16px; border-top: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<header>
+  <h5>지원서 작성</h5>
+  <button type="button" id="exit"><svg width="16" height="16"><path d="M1 1h14v14H1z"/></svg>저장 후 나가기</button>
+  <span>01:59:00</span> <button type="button">연장</button>
+</header>
+<nav>
+  <button type="button"><div><svg width="16" height="16"><path d="M1 1h14"/></svg></div></button><h6>기본정보</h6>
+  <button type="button"><div><svg width="16" height="16"><path d="M1 1h14"/></svg></div></button><h6>학력 및 경력</h6>
+</nav>
+<main id="root">
+  <h3>[테스트] 2026년 신입사원 채용</h3>
+</main>
+<footer>
+  <button type="button" id="tempSave">임시저장</button>
+  <button type="button" disabled>이전</button>
+  <button type="button" id="next">다음</button>
+  <button type="button" id="submit">제출하기</button>
+</footer>
+<script>
+const S = (window.__fixtureState = { f: {}, registered: [], majors: [], extraRows: { 경력기술서: 0, 포트폴리오: 0 }, saved: 0, submitted: false, tab: '' });
+const root = document.getElementById('root');
+
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c);
+  return e;
+}
+function icon(d = 'M4 7l5 5 5-5') {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '18');
+  svg.setAttribute('height', '18');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', d);
+  svg.append(p);
+  return svg;
+}
+
+// 열린 목록은 바깥을 누르면 닫힌다 (Escape는 쓰지 않는다)
+const layers = new Set();
+document.addEventListener('mousedown', (e) => {
+  for (const l of [...layers]) if (!l.wrap.contains(e.target)) l.close();
+});
+
+function listBody(items, extra) {
+  const ul = h('ul', { class: 'ats-flex' }, ...items);
+  const body = h('div', { id: 'dropdown-body', class: 'dropdown-body ats-flex' },
+    h('div', {}, h('div', { role: 'scrollbar' }, h('div', { id: 'design-system-scroll-container' }, h('div', {}, ul), extra))));
+  return { body, ul };
+}
+
+/** aria 없는 드롭다운: 버튼을 누르면 #dropdown-body가 생긴다 */
+function dropdown(key, ph, options, { disabled = false, searchable = false, onPick } = {}) {
+  const p = h('p', { class: 'dd-ph' }, ph);
+  const btn = h('button', { type: 'button', class: 'ats-flex ats-dd', disabled }, p, icon());
+  const wrap = h('div', { class: 'dd-wrap' }, h('div', { class: 'ats-group' }, btn));
+  let body = null;
+  const dd = {
+    wrap,
+    btn,
+    options,
+    set(v) {
+      S.f[key] = v;
+      p.textContent = v || ph;
+      p.className = v ? 'dd-val' : 'dd-ph';
+    },
+    close() {
+      body?.remove();
+      body = null;
+      layers.delete(dd);
+    },
+    open() {
+      for (const l of [...layers]) l.close();
+      const all = typeof dd.options === 'function' ? dd.options() : dd.options;
+      const itemsFor = (q) => {
+        const shown = searchable ? (q ? all.filter((o) => o.includes(q)) : all.slice(0, 5)) : all;
+        return shown.map((o) =>
+          h('li', {}, h('button', { type: 'button', onclick: () => { dd.set(o); dd.close(); onPick?.(o); } }, h('span', {}, o))),
+        );
+      };
+      const empty = h('p', { class: 'hide' }, '검색결과가 없어요');
+      const { body: b, ul } = listBody(itemsFor(''), empty);
+      if (searchable) {
+        const inp = h('input', { type: 'text', placeholder: '검색어를 입력해주세요.' });
+        inp.addEventListener('input', (e) => {
+          if (!e.isTrusted) return;
+          for (const li of [...ul.children].slice(1)) li.remove();
+          const items = itemsFor(inp.value.trim());
+          ul.append(...items);
+          empty.classList.toggle('hide', items.length > 0);
+        });
+        ul.prepend(h('li', {}, inp));
+      }
+      body = b;
+      wrap.append(body);
+      layers.add(dd);
+    },
+  };
+  btn.addEventListener('click', () => (body ? dd.close() : dd.open()));
+  return dd;
+}
+
+/** 라디오처럼 쓰는 버튼 묶음. 고른 버튼은 클래스·색만 다르다 (aria 없음) */
+function toggle(key, options, { disabled = false, onPick } = {}) {
+  const group = h('div', { class: 'tg ekwsh1v0' });
+  const t = {
+    group,
+    buttons: [],
+    set(v) {
+      S.f[key] = v;
+      for (const b of t.buttons) {
+        const on = b.textContent === v;
+        b.className = on ? 'tg-btn ats-radius-75 ats-b1-bold ats-shadow-1 ats-bg-white' : 'tg-btn ats-radius-75 ats-b1 ats-bg-gray-80';
+        b.style.color = on ? 'rgb(237, 32, 36)' : '';
+      }
+    },
+    setDisabled(d) {
+      for (const b of t.buttons) b.disabled = d;
+    },
+  };
+  for (const o of options) {
+    const b = h('button', { type: 'button', class: 'tg-btn ats-radius-75 ats-b1 ats-bg-gray-80', disabled }, h('p', {}, o));
+    b.addEventListener('click', () => {
+      t.set(o);
+      onPick?.(o);
+    });
+    t.buttons.push(b);
+    group.append(h('li', { class: 'ats-list-none' }, b));
+  }
+  return t;
+}
+
+/** 검색형 칸: 실제 키 입력에만 검색하고, 후보를 눌러야 값이 확정된다 */
+function search(key, ph, db, { onPick, onClear } = {}) {
+  const input = h('input', { type: 'text', placeholder: ph });
+  const wrap = h('div', { class: 'search-wrap' }, h('div', { class: 'ats-flex' }, h('div', {}, icon('M8 8m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0')), input));
+  let body = null;
+  let timer;
+  const s = {
+    wrap,
+    input,
+    close() {
+      body?.remove();
+      body = null;
+      layers.delete(s);
+    },
+  };
+  input.addEventListener('input', (e) => {
+    if (!e.isTrusted) return; // DOM으로 바꾼 값으로는 검색하지 않는다 (목록도 그대로)
+    S.f[key] = '';
+    onClear?.();
+    clearTimeout(timer);
+    const q = input.value.trim();
+    timer = setTimeout(() => show(q), 250); // DB 검색이 늦게 온다
+  });
+  function show(q) {
+    s.close();
+    if (!q) return;
+    const hits = db.filter((x) => x.includes(q)).map((name) =>
+      h('li', {}, h('button', { type: 'button', onclick: () => { input.value = name; S.f[key] = name; s.close(); onPick?.(name); } }, h('span', {}, name))),
+    );
+    const register = h('li', {}, h('button', { type: 'button', onclick: () => { S.registered.push(q); input.value = q; S.f[key] = q; s.close(); onPick?.(q); } },
+      h('span', {}, h('div', {}, icon('M8 2v12M2 8h12'), h('span', {}, `'${q}'`), '등록하기'))));
+    body = listBody([...hits, register]).body;
+    wrap.append(body);
+    layers.add(s);
+  }
+  return s;
+}
+
+function text(name, ph, { disabled = false, readonly = false, type = 'text' } = {}) {
+  const input = h('input', { type, name, placeholder: ph, disabled, readonly });
+  input.addEventListener('input', () => (S.f[name] = input.value));
+  input.addEventListener('change', () => (S.f[name] = input.value));
+  return input;
+}
+
+/** ats 줄 구조: 숨은 라벨 복사본 + 라벨(p) + 필수표시 + 본문 */
+function row(label, required, ...body) {
+  return h('div', { class: 'css-2jzcc8 e1gln9b0' },
+    h('span', { 'aria-hidden': 'true', class: 'hidden-copy' }, label),
+    h('div', { class: 'css-u1hmfk e1gln9b1' }, h('p', { class: 'e1gln9b2' }, label), h('div', { class: 'e1gln9b7' }, required ? h('span', {}, '*') : null)),
+    h('div', { class: 'css-b5x2oh e1gln9b4' }, ...body));
+}
+const section = (title, ...rows) => h('div', { class: 'e1okm36e0' }, h('div', {}, h('h5', {}, title)), h('div', { class: 'e13gw9lq0' }, ...rows));
+
+// ---------- 기본정보 ----------
+const gender = h('fieldset', {}, h('legend', {}),
+  h('label', {}, h('input', { type: 'radio', name: '남', value: 'M', onchange: () => (S.f.gender = 'M') }), h('span', {}, h('p', {}, '남'))),
+  h('label', {}, h('input', { type: 'radio', name: '여', value: 'F', onchange: () => (S.f.gender = 'F') }), h('span', {}, h('p', {}, '여'))));
+const relation = dropdown('relation', '관계', ['부', '모', '형제자매', '배우자', '기타']);
+const JOBS = { IT: ['SW개발', '인프라', '데이터분석'], 경영지원: ['인사', '재무', '총무'], 영업: ['B2B영업', '영업관리'] };
+const job = dropdown('job', '희망직무', () => JOBS[S.f.field] ?? [], { disabled: true });
+const field = dropdown('field', '분야', Object.keys(JOBS), { onPick: () => { job.set(''); job.btn.disabled = false; } });
+const route = dropdown('route', '지원경로를 선택해주세요.', ['채용 홈페이지', '취업 사이트', '지인 추천', '학교', '기타']);
+root.append(
+  section('기본정보',
+    row('이름', true, text('name', '이름을 입력해주세요.')),
+    row('생년월일', true, text('birth', 'YYYY.MM.DD')),
+    row('성별', true, gender),
+    row('핸드폰번호', true, text('phone', '010-0000-0000')),
+    row('이메일주소', true, text('email', 'example@email.com'), h('button', { type: 'button', disabled: true }, '중복확인')),
+    row('긴급연락처', true, text('emergency', '긴급연락처를 입력해주세요.'), relation.wrap),
+    row('지원분야', true, h('div', { class: 'px4lm' }, field.wrap), h('div', { class: 'px4lm' }, job.wrap)),
+    row('지원경로', true, route.wrap)));
+
+// ---------- 병역 / 장애 / 보훈 ----------
+const milDetail = h('div', { class: 'mil-detail hide' });
+const military = toggle('military', ['비대상', '군필', '미필', '면제', '복무중'], {
+  onPick: (v) => milDetail.classList.toggle('hide', v !== '군필' && v !== '복무중'),
+});
+const milStart = text('milStart', '입대일');
+const milEnd = text('milEnd', '제대일');
+const addMonths = (ym, n) => {
+  const m = /^(\d{4})\D?(\d{2})/.exec(ym);
+  if (!m) return '';
+  const t = Number(m[1]) * 12 + Number(m[2]) - 1 + n - 1; // 입대 달부터 n개월 → 마지막 달
+  return `${Math.floor(t / 12)}.${String((t % 12) + 1).padStart(2, '0')}`;
+};
+const period = (n) => h('button', { type: 'button', onclick: () => { milEnd.value = addMonths(milStart.value, n); S.f.milEnd = milEnd.value; } }, `${n} 개월`);
+const rank = dropdown('rank', '계급', ['이병', '일병', '상병', '병장', '하사', '중사']);
+const discharge = dropdown('discharge', '제대구분', ['만기제대', '의가사제대', '의병제대', '소집해제']);
+const branch = dropdown('branch', '군별을 선택해주세요.', ['육군', '해군', '공군', '해병대']);
+milDetail.append(h('div', {}, milStart, milEnd), h('div', {}, period(18), period(21), period(24)), rank.wrap, discharge.wrap, branch.wrap, text('specialty', '병과를 입력해주세요.'));
+const disabledNo = text('disabledNo', '장애등록번호를 입력해주세요.', { disabled: true });
+const disability = toggle('disability', ['비대상', '대상'], { onPick: (v) => (disabledNo.disabled = v !== '대상') });
+const veteranNo = text('veteranNo', '보훈번호를 입력해주세요.', { disabled: true });
+const veteran = toggle('veteran', ['비대상', '대상'], { onPick: (v) => (veteranNo.disabled = v !== '대상') });
+root.append(
+  section('병역사항 및 장애/보훈 여부',
+    row('병역', true, h('div', { class: 'oxt7tg' }, military.group, milDetail)),
+    row('장애여부', true, h('div', { class: 'oxt7tg' }, disability.group, h('div', {}, disabledNo))),
+    row('보훈여부', true, h('div', { class: 'oxt7tg' }, veteran.group, h('div', {}, veteranNo)))));
+
+// ---------- 인적사항 ----------
+const COUNTRIES = ['가나', '가봉', '가이아나', '감비아', '과테말라', '그리스', '나이지리아', '네덜란드', '노르웨이', '뉴질랜드', '대한민국', '덴마크', '독일', '라오스', '미국', '베트남', '일본', '중국', '캐나다', '프랑스'];
+const nationality = dropdown('nationality', '국적을 선택해주세요.', COUNTRIES, { searchable: true });
+root.append(
+  section('인적사항',
+    row('현주소', true, h('button', { type: 'button' }, '주소입력'), text('zip', '우편번호', { readonly: true }), text('addr1', '기본주소', { readonly: true }), text('addr2', '상세주소를 입력해주세요.')),
+    row('국적', true, nationality.wrap)));
+
+// ---------- 학력 ----------
+const SCHOOLS = { 한국대학교: '서울', '한국대학교(세종)': '세종', '한국대학교 경영대학원': '서울', 한국사이버대학교: '서울', 서울대학교: '서울', 서울과학기술대학교: '서울', 연세대학교: '서울', '연세대학교(미래)': '강원' };
+const region = dropdown('region', '학교소재지', ['서울', '경기', '인천', '강원', '세종', '충남', '부산'], { disabled: true });
+const campus = toggle('campus', ['본교', '분교'], { disabled: true });
+const school = search('school', '학교명을 검색해주세요.', Object.keys(SCHOOLS), {
+  onPick: (name) => {
+    region.btn.disabled = false;
+    region.set(SCHOOLS[name] ?? '');
+    campus.setDisabled(false);
+  },
+  onClear: () => {
+    region.btn.disabled = true;
+    region.set('');
+    campus.setDisabled(true);
+    campus.set('');
+  },
+});
+const degree = toggle('degree', ['학사', '전문학사']);
+const dayNight = toggle('dayNight', ['주간', '야간']);
+const grad = toggle('grad', ['졸업', '졸업예정', '수료', '중퇴', '휴학', '재학']);
+const gpaMax = dropdown('gpaMax', '만점기준', ['4.0', '4.3', '4.5', '100']);
+const majorsBox = h('div', { class: 'majors' });
+const MAJORS = ['경영학', '경영학과', '경영정보학', '국제경영학', '컴퓨터학', '컴퓨터공학', '경제학'];
+function addMajor() {
+  const m = { name: '', field: '', gpa: '' };
+  S.majors.push(m);
+  const gpa = h('input', { type: 'number', name: 'majorGpa', placeholder: '전공 평점', disabled: true });
+  gpa.addEventListener('input', () => (m.gpa = gpa.value));
+  const name = search(`major${S.majors.length}`, '전공명을 검색해주세요.', MAJORS, {
+    onPick: (v) => { m.name = v; gpa.disabled = false; },
+    onClear: () => { m.name = ''; gpa.disabled = true; },
+  });
+  const fieldDd = dropdown(`majorField${S.majors.length}`, '전공계열을 선택해주세요.', ['인문계열', '상경계열', '사회계열', '이공계열', '예체능계열'], { onPick: (v) => (m.field = v) });
+  majorsBox.append(h('div', { class: 'major-block' }, row('전공명', true, name.wrap), row('전공계열', true, fieldDd.wrap), row('전공 평점', false, gpa)));
+}
+root.append(
+  section('학력사항',
+    h('p', {}, '- 대학교'),
+    row('학위구분', true, degree.group),
+    row('학교정보', true, h('div', { class: 'b7bpxc' }, h('div', { class: 'lfteh6' }, h('div', { class: 'ats-group' }, school.wrap)), h('div', { class: 'oxt7tg' }, region.wrap, campus.group)), dayNight.group),
+    row('재학기간', true, text('eduStart', '입학일'), text('eduEnd', '졸업일'), h('button', { type: 'button' }, '4 년')),
+    row('졸업구분', true, grad.group),
+    row('학업성적', true, text('gpa', '', { type: 'number' }), h('p', {}, '/'), gpaMax.wrap),
+    row('전공', true, majorsBox, h('button', { type: 'button', onclick: addMajor }, icon('M8 2v12M2 8h12'), '추가하기'))));
+
+// ---------- 경력 ----------
+const tabPanel = h('div', { role: 'tabpanel' }, '탭을 고르면 입력 칸이 나와요');
+const tab = (name) => h('button', { type: 'button', role: 'tab', 'aria-selected': 'false', onclick: (e) => { S.tab = name; for (const t of e.currentTarget.parentElement.children) t.setAttribute('aria-selected', String(t === e.currentTarget)); } }, name);
+const urlRows = (kind) => {
+  const box = h('div', {});
+  const add = h('button', { type: 'button', onclick: () => { S.extraRows[kind]++; box.append(text(`${kind}Url${S.extraRows[kind]}`, 'URL을 입력해주세요.')); } }, icon('M8 2v12M2 8h12'), '추가하기');
+  return [box, add];
+};
+root.append(
+  section('경력사항',
+    h('div', { role: 'tablist' }, tab('직장경력'), tab('프로젝트')),
+    tabPanel,
+    row('경력기술서', false, ...urlRows('경력기술서')),
+    row('포트폴리오', false, ...urlRows('포트폴리오'))));
+
+document.getElementById('tempSave').addEventListener('click', () => S.saved++);
+document.getElementById('submit').addEventListener('click', () => (S.submitted = true));
+</script>
+</body>
+</html>

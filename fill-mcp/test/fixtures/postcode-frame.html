@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+  <head><meta charset="utf-8" /><title>우편번호 검색</title></head>
+  <body>
+    <!-- 다음 우편번호 검색 화면 흉내 (실제 구조는 다를 수 있다) -->
+    <form id="f" onsubmit="return false">
+      <input type="text" id="region_name" placeholder="예) 판교역로 166, 분당 주공, 백현동 532" />
+      <button type="submit" class="btn_search">검색</button>
+    </form>
+    <p class="txt_noresult" hidden>검색결과가 없습니다.</p>
+    <ul class="list_post"></ul>
+    <script>
+      const DB = [
+        { zonecode: '13529', road: '경기 성남시 분당구 판교역로 166 (카카오 판교아지트)', jibun: '경기 성남시 분당구 백현동 532' },
+        { zonecode: '06236', road: '서울 강남구 테헤란로 152 (강남파이낸스센터)', jibun: '서울 강남구 역삼동 737' },
+        { zonecode: '06164', road: '서울 강남구 테헤란로 521 (파르나스타워)', jibun: '서울 강남구 삼성동 159-8' },
+      ];
+      const target = window.opener || window.parent;
+      document.getElementById('f').addEventListener('submit', () => {
+        const q = document.getElementById('region_name').value.trim();
+        const ul = document.querySelector('.list_post');
+        ul.innerHTML = '';
+        // 검색은 조금 늦게 온다
+        setTimeout(() => {
+          const hits = q ? DB.filter((d) => d.road.includes(q) || d.jibun.includes(q)) : [];
+          document.querySelector('.txt_noresult').hidden = hits.length > 0;
+          for (const d of hits) {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="txt_postcode">${d.zonecode}</span><div class="main_road"><span class="tit">도로명</span> <a href="#" class="link_post">${d.road}</a></div><div class="main_address"><span class="tit">지번</span> ${d.jibun}</div>`;
+            li.querySelector('a').addEventListener('click', (e) => {
+              e.preventDefault();
+              target.postMessage({ type: 'postcode', zonecode: d.zonecode, roadAddress: d.road }, '*');
+              if (window.opener) window.close();
+            });
+            ul.append(li);
+          }
+        }, 300);
+      });
+    </script>
+  </body>
+</html>

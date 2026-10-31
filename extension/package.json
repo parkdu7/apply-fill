@@ -1,0 +1,33 @@
+{
+  "name": "@careerlog/extension",
+  "version": "0.2.0",
+  "description": "CareerLog v2 크롬 확장 (사이드패널 원클릭 채우기 + 파일·계정 보관함) + native messaging 호스트",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "keygen": "node scripts/keygen.mjs",
+    "build": "node scripts/keygen.mjs && vite build && node scripts/build-host.mjs",
+    "build:host": "node scripts/build-host.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "install-host": "node scripts/build-host.mjs && node scripts/install-host.mjs",
+    "uninstall-host": "node scripts/install-host.mjs --uninstall"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "3.0.0",
+    "@types/chrome": "^0.1.4",
+    "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.64.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}

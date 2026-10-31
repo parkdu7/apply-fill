@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko">
+  <head><meta charset="utf-8" /><title>간단 지원서</title></head>
+  <body>
+    <h2>인적사항</h2>
+    <form onsubmit="return false">
+      <div><label for="name">이름</label><input id="name" name="name" /></div>
+      <div><label for="phone">휴대폰</label><input id="phone" name="phone" placeholder="010-0000-0000" /></div>
+      <div><label for="mail">이메일</label><input id="mail" name="mail" type="email" /></div>
+      <button type="button" id="tmp" onclick="window.__saved = confirm('임시저장할까요?')">임시저장</button>
+      <button type="button" id="submit" onclick="window.__submitted = confirm('최종 제출하시겠습니까?')">최종제출</button>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>주소·어학</title>
+    <style>
+      #layer { position: fixed; top: 40px; left: 40px; width: 460px; height: 420px; background: #fff; border: 1px solid #888; }
+      #layer iframe { width: 100%; height: 100%; border: 0; }
+    </style>
+  </head>
+  <body>
+    <!--
+      P5 fixture
+      - 주소: 우편번호·주소 칸은 읽기 전용, [우편번호 찾기] → 레이어 안 iframe(다음 우편번호 흉내)에서 검색·선택 → 사이트가 칸을 채운다
+      - [팝업으로 찾기]는 같은 검색 화면을 새 창으로 연다
+      - 어학: [YBM 성적 불러오기] / [OPIc 성적 인증] 버튼과 결과 칸 (외부 연동은 자동으로 하지 않는다)
+    -->
+    <h2>인적사항</h2>
+    <div><label for="zip">우편번호</label><input id="zip" readonly /> <button type="button" id="find">우편번호 찾기</button> <button type="button" id="find-pop">팝업으로 찾기</button></div>
+    <div><label for="addr">주소</label><input id="addr" readonly size="50" /></div>
+    <div><label for="addr2">상세주소</label><input id="addr2" /></div>
+
+    <h2>어학</h2>
+    <div><button type="button" id="ybm">YBM 성적 불러오기</button> <button type="button" id="opic">OPIc 성적 인증</button></div>
+    <div><label for="toeic">TOEIC 점수</label><input id="toeic" readonly /></div>
+    <div><label for="toeic-date">응시일</label><input id="toeic-date" readonly /></div>
+
+    <script>
+      window.__fixtureState = { picks: 0 };
+      document.getElementById('find').addEventListener('click', () => {
+        if (document.getElementById('layer')) return;
+        const layer = document.createElement('div');
+        layer.id = 'layer';
+        layer.innerHTML = '<iframe src="postcode-frame.html" title="우편번호 검색"></iframe>';
+        document.body.append(layer);
+      });
+      document.getElementById('find-pop').addEventListener('click', () => window.open('postcode-frame.html', 'postcode', 'width=500,height=500'));
+      window.addEventListener('message', (e) => {
+        if (e.data?.type !== 'postcode') return;
+        document.getElementById('zip').value = e.data.zonecode;
+        document.getElementById('addr').value = e.data.roadAddress;
+        window.__fixtureState.picks++;
+        document.getElementById('layer')?.remove();
+      });
+      // YBM 버튼: 실제로는 외부 사이트 팝업. 여기서는 사용자가 다 하고 나면 점수가 들어오는 것처럼
+      document.getElementById('ybm').addEventListener('click', () => {
+        setTimeout(() => {
+          document.getElementById('toeic').value = '905';
+          document.getElementById('toeic-date').value = '2026-05-10';
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>

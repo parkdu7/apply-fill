@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>OO은행 입사지원서 (테스트)</title>
+<style>
+  .blind { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .hide { display: none; }
+  table { border-collapse: collapse; } th, td { border: 1px solid #ccc; padding: 4px; }
+</style>
+</head>
+<body>
+<h2>지원서 작성</h2>
+<div id="step1">
+  <h3>인적사항</h3>
+  <table class="tbl">
+    <tr>
+      <th>성명 <span class="req">*</span></th><td><input type="text" name="nameKo" required></td>
+      <th>영문성명</th><td><input type="text" name="nameEn" placeholder="Hong Gildong"></td>
+    </tr>
+    <tr>
+      <th>생년월일</th><td><input type="text" name="birth" class="datepicker" readonly placeholder="YYYY.MM.DD"></td>
+      <th>성별</th>
+      <td>
+        <input type="radio" name="gender" id="g1" value="M" class="blind"><label for="g1">남</label>
+        <input type="radio" name="gender" id="g2" value="F" class="blind"><label for="g2">여</label>
+      </td>
+    </tr>
+    <tr>
+      <th>휴대폰</th>
+      <td colspan="3">
+        <select name="tel1"><option value="">선택</option><option>010</option><option>011</option></select>
+        - <input type="text" name="tel2" maxlength="4"> - <input type="text" name="tel3" maxlength="4">
+      </td>
+    </tr>
+    <tr>
+      <th>이메일</th>
+      <td colspan="3">
+        <input type="text" name="emailId"> @
+        <select name="emailDomain"><option value="">직접입력</option><option>gmail.com</option><option>naver.com</option></select>
+      </td>
+    </tr>
+    <tr>
+      <th>주소</th>
+      <td colspan="3">
+        <input type="text" name="zip" readonly> <button type="button">우편번호 검색</button><br>
+        <input type="text" name="addr1" readonly> <input type="text" name="addr2" placeholder="상세주소">
+      </td>
+    </tr>
+    <tr><th>주민등록번호</th><td colspan="3"><input type="text" name="rrn"></td></tr>
+    <tr><th>사진</th><td colspan="3"><input type="file" name="photo"></td></tr>
+  </table>
+
+  <h3>병역사항</h3>
+  <dl>
+    <dt>병역구분</dt>
+    <dd><select name="military"><option value="">-- 선택 --</option><option>군필</option><option>미필</option><option>면제</option><option>해당없음</option></select></dd>
+    <dt>입대일</dt>
+    <dd><input type="date" name="milStart"></dd>
+  </dl>
+
+  <h3>학력사항</h3>
+  <table id="eduTable">
+    <thead><tr><th>학교명</th><th>전공</th><th>입학년월</th><th>졸업구분</th><th>학점</th></tr></thead>
+    <tbody>
+      <tr class="edu-row">
+        <td><input name="school"></td>
+        <td><input name="major"></td>
+        <td><input type="month" name="eduStart"></td>
+        <td><select name="grad"><option value="">선택</option><option>졸업</option><option>졸업예정</option><option>재학</option></select></td>
+        <td><input name="gpa" size="4"> / <select name="gpaMax"><option>4.5</option><option>4.3</option></select></td>
+      </tr>
+    </tbody>
+  </table>
+  <button type="button" id="addEdu">+ 학력 추가</button>
+
+  <h3>자격증</h3>
+  <div class="row">
+    <label>자격증명 <input type="text" name="cert"></label>
+    <label>취득일 <input type="text" name="certDate" placeholder="예) 2024.05.01"></label>
+  </div>
+
+  <h3>자기소개서</h3>
+  <p>1. 지원동기와 입사 후 포부를 기술하십시오. (1000자 이내)</p>
+  <textarea name="essay1" maxlength="1000" rows="4" cols="60"></textarea><span class="count">0 / 1000자</span>
+
+  <h3>개인정보 동의</h3>
+  <label><input type="checkbox" name="agree"> 개인정보 수집·이용에 동의합니다</label>
+  <label><input type="checkbox" name="newsletter"> 채용 소식 메일 받기</label>
+  <p>지원서 비밀번호 <input type="password" name="pw"></p>
+
+  <div class="btns">
+    <button type="button" id="next">다음 단계</button>
+    <button type="button" id="submit">최종 제출</button>
+  </div>
+</div>
+
+<div id="step2" class="hide">
+  <h3>2단계: 추가정보</h3>
+  <label for="hobby">취미</label> <input id="hobby" name="hobby">
+</div>
+
+<iframe id="frm" src="legacy-frame.html" style="width: 600px; height: 120px"></iframe>
+
+<script>
+  // 프레임워크 상태 흉내: 이벤트로만 갱신된다 (value만 바꾸면 반영 안 됨)
+  window.state = {};
+  window.events = [];
+  document.addEventListener('input', (e) => { if (e.target.name) state[e.target.name] = e.target.value; });
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t.name) return;
+    if (t.type === 'checkbox') state[t.name] = t.checked;
+    else if (t.type === 'radio') { if (t.checked) state[t.name] = t.value; }
+    else state[t.name] = t.value;
+    events.push('change:' + t.name);
+  });
+  document.getElementById('addEdu').onclick = () => {
+    const tb = document.querySelector('#eduTable tbody');
+    const row = tb.rows[0].cloneNode(true); // data-* 속성까지 복제된다
+    row.querySelectorAll('input').forEach((i) => (i.value = ''));
+    tb.appendChild(row);
+  };
+  document.getElementById('next').onclick = () => {
+    if (confirm('입력하신 내용을 저장하고 다음 단계로 이동할까요?')) {
+      document.getElementById('step1').classList.add('hide');
+      document.getElementById('step2').classList.remove('hide');
+    }
+  };
+  document.getElementById('submit').onclick = () => { window.submitted = true; };
+</script>
+</body>
+</html>

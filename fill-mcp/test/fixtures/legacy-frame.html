@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>추가 입력</title></head>
+<body>
+  <h4>추천인</h4>
+  <label for="ref">추천인 성명</label> <input id="ref" name="referrer">
+  <script>
+    window.state = {};
+    document.addEventListener('input', (e) => (state[e.target.name] = e.target.value));
+  </script>
+</body>
+</html>

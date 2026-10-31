@@ -1,0 +1,5 @@
+node_modules/
+dist/
+# 개인정보: 프로필과 페이지 스냅샷은 커밋하지 않는다
+data/
+test/fixtures/*/bundle.js

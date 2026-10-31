@@ -1,0 +1,42 @@
+{
+  "name": "@careerlog/fill-mcp",
+  "version": "0.1.0",
+  "description": "지원서 기본정보 자동 입력 MCP 서버 (CareerLog Phase 1 프로토타입)",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "careerlog-fill-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "browser": "node dist/index.js --open-browser",
+    "test": "node build.mjs --fixtures && node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "test:synthetic": "node build.mjs --fixtures && node test/run-synthetic.mjs",
+    "e2e": "node build.mjs --fixtures && node test/e2e/run.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "playwright-core": "^1.64.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "5.13.7",
+    "@mui/x-date-pickers": "6.10.2",
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "dayjs": "^1.11.23",
+    "esbuild": "^0.28.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

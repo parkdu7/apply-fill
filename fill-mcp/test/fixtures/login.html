@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>로그인</title>
+    <style>
+      .g-recaptcha { width: 304px; height: 78px; border: 1px solid #ccc; }
+      .grecaptcha-badge { position: fixed; right: 0; bottom: 0; width: 70px; height: 60px; background: #eee; }
+    </style>
+  </head>
+  <body>
+    <!--
+      P4 로그인 fixture. ?mode=
+      - (없음): 아이디/비밀번호 + [로그인]. tester / correct-horse 면 마이페이지로 바뀐다 (폼이 사라진다)
+      - captcha: 같은 폼 + reCAPTCHA 체크박스
+      - badge: 같은 폼 + reCAPTCHA v3 배지 (로그인을 막지 않는다)
+      - otp: 인증번호 입력 (2단계 인증)
+      - identity: 본인인증 화면
+      - signup: 비밀번호 칸이 두 개 (가입 화면)
+    -->
+    <main id="app"></main>
+    <script>
+      const mode = new URLSearchParams(location.search).get('mode') || '';
+      window.__fixtureState = { attempts: 0, loggedIn: false };
+      const app = document.getElementById('app');
+      const loginForm = () => `
+        <h2>로그인</h2>
+        <form id="login">
+          <div><label for="uid">아이디</label><input id="uid" name="userId" placeholder="아이디" /></div>
+          <div><label for="upw">비밀번호</label><input id="upw" name="userPw" type="password" placeholder="비밀번호" /></div>
+          ${mode === 'captcha' ? '<div class="g-recaptcha"><span>로봇이 아닙니다</span></div>' : ''}
+          <p class="err" hidden>아이디 또는 비밀번호가 맞지 않습니다</p>
+          <button type="submit">로그인</button>
+        </form>
+        <a href="#">휴대폰 인증으로 아이디 찾기</a> · <a href="#">회원가입</a>
+        ${mode === 'badge' ? '<div class="grecaptcha-badge">reCAPTCHA</div>' : ''}`;
+      if (mode === 'otp') {
+        app.innerHTML = '<h2>2단계 인증</h2><label for="code">인증번호</label><input id="code" autocomplete="one-time-code" /><button type="button">확인</button>';
+      } else if (mode === 'identity') {
+        app.innerHTML = '<h2>본인인증</h2><p>지원서 작성을 위해 본인인증이 필요합니다.</p><button type="button">휴대폰 본인인증</button><button type="button">아이핀 인증</button>';
+      } else if (mode === 'signup') {
+        app.innerHTML =
+          '<h2>회원가입</h2><form><label>아이디 <input name="id" /></label><label>비밀번호 <input type="password" name="pw" /></label><label>비밀번호 확인 <input type="password" name="pw2" /></label><button type="submit">가입하기</button></form>';
+      } else {
+        app.innerHTML = loginForm();
+        document.getElementById('login').addEventListener('submit', (e) => {
+          e.preventDefault();
+          window.__fixtureState.attempts++;
+          const ok = document.getElementById('uid').value === 'tester' && document.getElementById('upw').value === 'correct-horse';
+          if (ok) {
+            window.__fixtureState.loggedIn = true;
+            app.innerHTML = '<h2>마이페이지</h2><p>tester님 환영합니다</p>';
+          } else document.querySelector('.err').hidden = false;
+        });
+      }
+    </script>
+  </body>
+</html>
